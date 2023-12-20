@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.8)
 project(moveit2_scripts)
 
+# Set compiler warnings
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
+# Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
@@ -18,69 +19,30 @@ find_package(control_msgs REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(grasping_msgs REQUIRED)
 
+# Skip linters if testing
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
+  set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
- 
+# Function to create and configure executables
+function(create_moveit_executable target_name)
+  add_executable(${target_name} src/${target_name}.cpp)
+  target_include_directories(${target_name} PUBLIC include)
+  ament_target_dependencies(${target_name}
+    ament_cmake rclcpp rclcpp_action moveit_core moveit_ros_planning_interface
+    interactive_markers moveit_ros_planning grasping_msgs control_msgs)
+  install(TARGETS ${target_name} DESTINATION lib/${PROJECT_NAME})
+endfunction()
 
-# Generate the executable for pick_and_place
-add_executable(pick_and_place src/pick_and_place.cpp)
-
-target_include_directories(pick_and_place
-    PUBLIC include)
-ament_target_dependencies(pick_and_place
-    ament_cmake
-    rclcpp
-    rclcpp_action
-    moveit_core
-    moveit_ros_planning_interface
-    interactive_markers
-    moveit_ros_planning
-	grasping_msgs
-    control_msgs)
-
-# Install the executable for pick_and_place
-install(TARGETS 
-    pick_and_place
-    DESTINATION lib/${PROJECT_NAME}
-)
-
-# Generate the executable for pick_and_place_perception
-add_executable(pick_and_place_perception src/pick_and_place_perception.cpp)
-
-target_include_directories(pick_and_place_perception
-    PUBLIC include)
-ament_target_dependencies(pick_and_place_perception
-    ament_cmake
-    rclcpp
-    rclcpp_action
-    moveit_core
-    moveit_ros_planning_interface
-    interactive_markers
-    moveit_ros_planning
-	grasping_msgs
-    control_msgs)
-
-# Install the executable for pick_and_place_perception
-install(TARGETS 
-    pick_and_place_perception
-    DESTINATION lib/${PROJECT_NAME}
-)
-
+# Create and configure executables
+create_moveit_executable(pick_and_place)
+create_moveit_executable(pick_and_place_perception)
+create_moveit_executable(pick_and_place_perception_real)
 
 # Install the launch file
-install(DIRECTORY 
-	launch
-    DESTINATION share/${PROJECT_NAME}
-)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()
