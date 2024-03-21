@@ -1,10 +1,10 @@
-#include <rclcpp/rclcpp.hpp>
 #include <geometric_shapes/shape_operations.h>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/msg/attached_collision_object.hpp>
 #include <moveit_msgs/msg/collision_object.hpp>
 #include <moveit_msgs/msg/planning_scene.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("move_group_demo");
 
@@ -100,6 +100,12 @@ int main(int argc, char **argv) {
   bool success_arm = (move_group_arm.plan(my_plan_arm) ==
                       moveit::core::MoveItErrorCode::SUCCESS);
 
+  if (!success_arm) {
+    RCLCPP_ERROR(LOGGER, "Failed to plan to home position");
+    rclcpp::shutdown();
+    return -1;
+  }
+
   move_group_arm.execute(my_plan_arm);
 
   // Pregrasp
@@ -111,36 +117,41 @@ int main(int argc, char **argv) {
   target_pose1.orientation.z = 0.00;
   target_pose1.orientation.w = 0.00;
   target_pose1.position.x = 0.343;
-  // target_pose1.position.y = -0.02;
-  target_pose1.position.y = 0.132;
+  target_pose1.position.y = -0.02;
+  // target_pose1.position.y = 0.132;
   target_pose1.position.z = 0.264;
   move_group_arm.setPoseTarget(target_pose1);
 
   success_arm = (move_group_arm.plan(my_plan_arm) ==
                  moveit::core::MoveItErrorCode::SUCCESS);
+  if (!success_arm) {
+    RCLCPP_ERROR(LOGGER, "Failed to plan to pregrasp position");
+    rclcpp::shutdown();
+    return -1;
+  }
 
   move_group_arm.execute(my_plan_arm);
 
   // Open Gripper
 
-   RCLCPP_INFO(LOGGER, "Open Gripper!");
+  RCLCPP_INFO(LOGGER, "Open Gripper!");
 
-   move_group_gripper.setNamedTarget("gripper_open");
+  move_group_gripper.setNamedTarget("gripper_open");
 
-   moveit::planning_interface::MoveGroupInterface::Plan my_plan_gripper;
-   bool success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
-                           moveit::core::MoveItErrorCode::SUCCESS);
+  moveit::planning_interface::MoveGroupInterface::Plan my_plan_gripper;
+  bool success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
+                          moveit::core::MoveItErrorCode::SUCCESS);
 
-   move_group_gripper.execute(my_plan_gripper);
+  move_group_gripper.execute(my_plan_gripper);
 
   // Approach
   RCLCPP_INFO(LOGGER, "Approach to object!");
 
   std::vector<geometry_msgs::msg::Pose> approach_waypoints;
-  target_pose1.position.z -= 0.03;
+  target_pose1.position.z -= 0.04;
   approach_waypoints.push_back(target_pose1);
 
-  target_pose1.position.z -= 0.03;
+  target_pose1.position.z -= 0.04;
   approach_waypoints.push_back(target_pose1);
 
   moveit_msgs::msg::RobotTrajectory trajectory_approach;
@@ -150,34 +161,51 @@ int main(int argc, char **argv) {
   double fraction = move_group_arm.computeCartesianPath(
       approach_waypoints, eef_step, jump_threshold, trajectory_approach);
 
+  if (fraction < 0.9) {
+    RCLCPP_ERROR(LOGGER, "Failed to plan a sufficient approach path");
+    rclcpp::shutdown();
+    return -1;
+  }
+
   move_group_arm.execute(trajectory_approach);
 
   // Close Gripper
 
-   RCLCPP_INFO(LOGGER, "Close Gripper!");
+  RCLCPP_INFO(LOGGER, "Close Gripper!");
+  move_group_gripper.setNamedTarget("gripper_middle");
 
-   move_group_gripper.setNamedTarget("gripper_middle");
+  success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
+                     moveit::core::MoveItErrorCode::SUCCESS);
 
-   success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
-                      moveit::core::MoveItErrorCode::SUCCESS);
+  if (!success_gripper) {
+    RCLCPP_ERROR(LOGGER, "Failed to open gripper");
+    rclcpp::shutdown();
+    return -1;
+  }
 
-   move_group_gripper.execute(my_plan_gripper);
+  move_group_gripper.execute(my_plan_gripper);
 
   // Retreat
 
   RCLCPP_INFO(LOGGER, "Retreat from object!");
 
   std::vector<geometry_msgs::msg::Pose> retreat_waypoints;
-  target_pose1.position.z += 0.03;
+  target_pose1.position.z += 0.04;
   retreat_waypoints.push_back(target_pose1);
 
-  target_pose1.position.z += 0.03;
+  target_pose1.position.z += 0.04;
   retreat_waypoints.push_back(target_pose1);
 
   moveit_msgs::msg::RobotTrajectory trajectory_retreat;
 
   fraction = move_group_arm.computeCartesianPath(
       retreat_waypoints, eef_step, jump_threshold, trajectory_retreat);
+
+  if (fraction < 0.9) {
+    RCLCPP_ERROR(LOGGER, "Failed to plan a sufficient approach path");
+    rclcpp::shutdown();
+    return -1;
+  }
 
   move_group_arm.execute(trajectory_retreat);
 
@@ -189,25 +217,35 @@ int main(int argc, char **argv) {
   current_state_arm->copyJointGroupPositions(joint_model_group_arm,
                                              joint_group_positions_arm);
 
-  joint_group_positions_arm[0] = 0.0; // Shoulder Pan
+  joint_group_positions_arm[0] += 3.141592; // Shoulder Pan
 
   move_group_arm.setJointValueTarget(joint_group_positions_arm);
 
   success_arm = (move_group_arm.plan(my_plan_arm) ==
                  moveit::core::MoveItErrorCode::SUCCESS);
 
+  if (!success_arm) {
+    RCLCPP_ERROR(LOGGER, "Failed to plan to pregrasp position");
+    rclcpp::shutdown();
+    return -1;
+  }
   move_group_arm.execute(my_plan_arm);
 
   // Open Gripper
 
-   RCLCPP_INFO(LOGGER, "Release Object!");
+  RCLCPP_INFO(LOGGER, "Release Object!");
 
-   move_group_gripper.setNamedTarget("gripper_open");
+  move_group_gripper.setNamedTarget("gripper_open");
 
-   success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
-                      moveit::core::MoveItErrorCode::SUCCESS);
+  success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
+                     moveit::core::MoveItErrorCode::SUCCESS);
+  if (!success_gripper) {
+    RCLCPP_ERROR(LOGGER, "Failed to open gripper");
+    rclcpp::shutdown();
+    return -1;
+  }
 
-   move_group_gripper.execute(my_plan_gripper);
+  move_group_gripper.execute(my_plan_gripper);
 
   rclcpp::shutdown();
   return 0;

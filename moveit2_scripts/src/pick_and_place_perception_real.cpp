@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
 
   RCLCPP_INFO(LOGGER, "Close Gripper!");
 
-  move_group_gripper.setNamedTarget("gripper_middle");
+  move_group_gripper.setNamedTarget("gripper_closed");
 
   success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
                      moveit::core::MoveItErrorCode::SUCCESS);
