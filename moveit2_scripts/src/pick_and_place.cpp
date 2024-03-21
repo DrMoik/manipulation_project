@@ -117,8 +117,8 @@ int main(int argc, char **argv) {
   target_pose1.orientation.z = 0.00;
   target_pose1.orientation.w = 0.00;
   target_pose1.position.x = 0.343;
-  target_pose1.position.y = -0.02;
-  // target_pose1.position.y = 0.132;
+
+  target_pose1.position.y = 0.132;
   target_pose1.position.z = 0.264;
   move_group_arm.setPoseTarget(target_pose1);
 
@@ -141,6 +141,11 @@ int main(int argc, char **argv) {
   moveit::planning_interface::MoveGroupInterface::Plan my_plan_gripper;
   bool success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
                           moveit::core::MoveItErrorCode::SUCCESS);
+  if (!success_gripper) {
+    RCLCPP_ERROR(LOGGER, "Failed to open gripper");
+    rclcpp::shutdown();
+    return -1;
+  }
 
   move_group_gripper.execute(my_plan_gripper);
 
@@ -172,13 +177,13 @@ int main(int argc, char **argv) {
   // Close Gripper
 
   RCLCPP_INFO(LOGGER, "Close Gripper!");
-  move_group_gripper.setNamedTarget("gripper_middle");
+  move_group_gripper.setNamedTarget("gripper_closed");
 
   success_gripper = (move_group_gripper.plan(my_plan_gripper) ==
                      moveit::core::MoveItErrorCode::SUCCESS);
 
   if (!success_gripper) {
-    RCLCPP_ERROR(LOGGER, "Failed to open gripper");
+    RCLCPP_ERROR(LOGGER, "Failed to close gripper");
     rclcpp::shutdown();
     return -1;
   }
@@ -211,7 +216,7 @@ int main(int argc, char **argv) {
 
   // Place
 
-  RCLCPP_INFO(LOGGER, "Rotating Arm");
+  RCLCPP_INFO(LOGGER, "Release Position");
 
   current_state_arm = move_group_arm.getCurrentState(10);
   current_state_arm->copyJointGroupPositions(joint_model_group_arm,
@@ -225,7 +230,7 @@ int main(int argc, char **argv) {
                  moveit::core::MoveItErrorCode::SUCCESS);
 
   if (!success_arm) {
-    RCLCPP_ERROR(LOGGER, "Failed to plan to pregrasp position");
+    RCLCPP_ERROR(LOGGER, "Failed to plan to release position");
     rclcpp::shutdown();
     return -1;
   }
