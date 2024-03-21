@@ -117,8 +117,7 @@ int main(int argc, char **argv) {
   target_pose1.orientation.z = 0.00;
   target_pose1.orientation.w = 0.00;
   target_pose1.position.x = 0.343;
-
-  target_pose1.position.y = 0.132;
+  target_pose1.position.y = -0.02;
   target_pose1.position.z = 0.264;
   move_group_arm.setPoseTarget(target_pose1);
 
