@@ -152,10 +152,10 @@ int main(int argc, char **argv) {
   RCLCPP_INFO(LOGGER, "Approach to object!");
 
   std::vector<geometry_msgs::msg::Pose> approach_waypoints;
-  target_pose1.position.z -= 0.04;
+  target_pose1.position.z -= 0.05;
   approach_waypoints.push_back(target_pose1);
 
-  target_pose1.position.z -= 0.04;
+  target_pose1.position.z -= 0.05;
   approach_waypoints.push_back(target_pose1);
 
   moveit_msgs::msg::RobotTrajectory trajectory_approach;

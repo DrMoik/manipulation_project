@@ -4,11 +4,11 @@ controller_manager:
     update_rate: 100  # Hz
 
     ur_manipulator_controller:
-      type: joint_trajectory_controller/JointTrajectoryController
+      type: joint_trajectory_controller/FollowJointTrajectory
 
 
     gripper_controller:
-      type: joint_trajectory_controller/JointTrajectoryController
+      type: gripper_controller/GripperCommand
 
 
     joint_state_broadcaster:
